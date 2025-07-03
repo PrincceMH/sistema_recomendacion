@@ -2,11 +2,9 @@ import pandas as pd
 from collections import Counter
 
 def obtener_usuarios(data):
-    """
-    Retorna la lista de usuarios desde la matriz de utilidad.
-    Se omite la primera columna que debe ser 'pelicula' (movieId).
-    """
-    return list(data.columns)[1:]  # omitir columna 'pelicula'
+    """Devuelve los userId únicos del DataFrame plano."""
+    return sorted(data['userId'].unique())
+
 
 def preparar_datos(data, movies, usuario_x):
     # === PASO 1: Obtener las películas vistas por el usuario ===

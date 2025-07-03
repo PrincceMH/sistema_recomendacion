@@ -1,7 +1,8 @@
 from dask.distributed import Client
 from knn.load_data import cargar_rating_matrix
 from knn.preparar_datos import obtener_usuarios, preparar_datos
-from knn import knn
+from knn.knn import knn
+
 from knn.distancias import (
     distancia_euclidiana,
     distancia_manhattan,
@@ -28,8 +29,10 @@ data = cargar_rating_matrix(
     path='/mnt/datasets/ml-32m/ratings.csv',
     min_ratings_usuario=1000,
     min_ratings_pelicula=1000,
-    frac_sample=0.05  # Puedes subir a 0.1 si tu RAM lo permite
+    frac_sample=0.05,  # Puedes subir a 0.1 si tu RAM lo permite
+    return_pivot=False
 )
+print("✅ Columnas del DataFrame:", data.columns.tolist())
 
 # === 3. Cargar metadata de películas (completa) ===
 movies = pd.read_csv('/mnt/datasets/ml-32m/movies.csv')
