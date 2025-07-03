@@ -2,48 +2,64 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import networkx as nx
 
-def obtener_usuarios(data):
-    """Devuelve una lista de usuarios, ignorando la primera columna que es 'pelicula'."""
-    return list(data.columns[1:])  # 'pelicula' es la columna 0
+def recomendar_peliculas(vecinos, peliculas_no_vistas_df, tabla, umbral_vecinos):
+    resultados_recomendaciones = []
 
-def knn(usuario_x, data, k, distancia_funcion):
-    resultados = []
-    for usuario in data.columns[1:]:
-        if usuario != usuario_x:
-            pares = data[[usuario_x, usuario]].dropna()
-            v1 = pares[usuario_x].values
-            v2 = pares[usuario].values
-            valor = distancia_funcion(v1, v2)
+    if vecinos:
+        vecinos_ids = [v for v, _ in vecinos]
 
-            # Manejo de valores nulos o indefinidos
-            if distancia_funcion.__name__ in ['similitud_coseno', 'correlacion_pearson']:
-                valor = -1 if valor is None else valor
+        print(f"\n=== Recomendaciones basadas en promedio de vecinos (umbral >= {umbral_vecinos}) ===\n")
+
+        for _, pelicula in peliculas_no_vistas_df.iterrows():
+            movie_id = pelicula['movieId']
+            title = pelicula['title']
+            genres = pelicula['genres']
+
+            ratings_vecinos = []
+            if movie_id in tabla.index:
+                fila = tabla.loc[movie_id, vecinos_ids]
+                for vecino_id in vecinos_ids:
+                    rating = fila[vecino_id] if vecino_id in fila.index else None
+                    ratings_vecinos.append((vecino_id, rating))
             else:
-                valor = float('inf') if valor is None else valor
+                ratings_vecinos = [(vecino_id, None) for vecino_id in vecinos_ids]
 
-            resultados.append((usuario, valor))
+            ratings_validos = [r for _, r in ratings_vecinos if pd.notnull(r) and r >= umbral_vecinos]
 
-    # Ordenar según la distancia/similitud
-    reverse = distancia_funcion.__name__ in ['similitud_coseno', 'correlacion_pearson']
-    resultados.sort(key=lambda x: x[1], reverse=reverse)
+            if not ratings_validos:
+                continue
 
-    return resultados[:k]
+            promedio = sum(ratings_validos) / len(ratings_validos)
 
-def recomendar_peliculas(data, usuario_x, vecinos, umbral):
-    vecinos_ids = [v for v, _ in vecinos]
-    no_vistas = data[data[usuario_x].isna()]
-    recomendaciones = []
+            print(f"Película: {title} (ID: {movie_id})")
+            print(f"Géneros: {genres}")
+            for vecino_id, rating in ratings_vecinos:
+                if pd.isnull(rating):
+                    estado = "Sin datos"
+                elif rating >= umbral_vecinos:
+                    estado = f"{rating} ✅"
+                else:
+                    estado = f"{rating} ❌"
+                print(f"  Vecino {vecino_id}: {estado}")
+            print(f"Promedio (solo ratings >= {umbral_vecinos}): {round(promedio, 2)}\n")
 
-    for _, fila in no_vistas.iterrows():
-        pelicula = fila['pelicula']
-        calificaciones = fila[vecinos_ids]
-        validas = calificaciones[calificaciones >= umbral].dropna()
-        if not validas.empty:
-            promedio = validas.mean()
-            recomendaciones.append((pelicula, promedio, validas))
+            resultados_recomendaciones.append({
+                'movieId': movie_id,
+                'title': title,
+                'genres': genres,
+                'promedio': promedio
+            })
 
-    recomendaciones.sort(key=lambda x: x[1], reverse=True)
-    return recomendaciones
+        resultados_recomendaciones.sort(key=lambda x: x['promedio'], reverse=True)
+
+        print("\n=== Lista FINAL ordenada de mayor a menor promedio ===\n")
+        for r in resultados_recomendaciones:
+            print(f"{r['title']} | Géneros: {r['genres']} | Promedio: {round(r['promedio'], 2)}")
+
+    else:
+        print("No hay vecinos calculados.")
+
+    return resultados_recomendaciones
 
 def graficar_red(usuario_x, vecinos, tipo):
     G = nx.Graph()

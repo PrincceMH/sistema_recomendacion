@@ -8,7 +8,8 @@ def cargar_rating_matrix(
     frac_sample=None
 ):
     # 👇 Esta lectura solo se hace en el nodo cliente (tu máquina), no en workers remotos
-    df = dd.read_csv(path).compute()
+    columns = ['userId', 'movieId', 'rating']  # Especificar columnas necesarias
+    df = dd.read_csv(path, usecols=columns).compute()
 
     # Filtrar usuarios con suficientes calificaciones
     conteo_usuarios = df.groupby("userId").size()
@@ -30,3 +31,7 @@ def cargar_rating_matrix(
     matrix.rename(columns={"movieId": "pelicula"}, inplace=True)
 
     return matrix
+
+def cargar_peliculas(path):
+    """Carga el archivo de películas completo."""
+    return pd.read_csv(path)
