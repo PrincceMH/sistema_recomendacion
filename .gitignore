@@ -1,0 +1,6 @@
+venv/
+data/
+ml-32m
+checksums.txt
+*.csv
+*__pycache__*
