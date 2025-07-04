@@ -1,10 +1,15 @@
 import pandas as pd
 from collections import Counter
-
 def obtener_usuarios(data):
-    """Devuelve los userId únicos del DataFrame plano."""
-    return sorted(data['userId'].unique())
-
+    """Devuelve una lista ordenada de userId únicos, compatible con Pandas y Dask."""
+    try:
+        usuarios = data['userId'].unique()
+        if hasattr(usuarios, 'compute'):  # Es Dask
+            usuarios = usuarios.compute()
+        return sorted(usuarios.tolist())
+    except Exception as e:
+        print(f"❌ Error al obtener usuarios: {e}")
+        return []
 
 def preparar_datos(data, movies, usuario_x):
     # === PASO 1: Obtener las películas vistas por el usuario ===
