@@ -16,7 +16,7 @@ from knn.filtrar_recomendaciones import filtrar_recomendaciones, mostrar_recomen
 
 # ===== 1. Conexión a Dask (solo una vez) =====
 try:
-    client = Client("tcp://10.7.134.38:8786")
+    client = Client("tcp://10.147.17.63:8786")
     print("Conectado a Dask scheduler remoto")
     print(client)
 except Exception as e:
