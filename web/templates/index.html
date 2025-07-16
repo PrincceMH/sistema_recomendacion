@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Recomendación KNN</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎬 Sistema de Recomendación KNN</h1>
+            <p>Descubre nuevas películas basadas en tus gustos y preferencias</p>
+        </div>
+
+        <div class="main-content">
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('user-selection')">👤 Selección de Usuario</button>
+                <button class="tab" onclick="switchTab('knn-config')">⚙️ Configuración KNN</button>
+                <button class="tab" onclick="switchTab('results')">📊 Resultados</button>
+                <button class="tab" onclick="switchTab('visualization')">🌐 Visualización</button>
+            </div>
+
+            <!-- Tab: Selección de Usuario -->
+            <div id="user-selection" class="tab-content active">
+                <div class="section">
+                    <h2><span class="section-icon">1</span>Seleccionar Tipo de Usuario</h2>
+                    <div class="form-group">
+                        <label>
+                            <input type="radio" name="user-type" value="existing" checked onchange="toggleUserType()">
+                            Usuario Existente
+                        </label>
+                        <label style="margin-left: 20px;">
+                            <input type="radio" name="user-type" value="new" onchange="toggleUserType()">
+                            Nuevo Usuario
+                        </label>
+                    </div>
+                </div>
+
+                <div id="existing-user-section" class="section">
+                    <h2><span class="section-icon">📋</span>Usuario Existente</h2>
+                    <div class="form-group">
+                        <label for="user-id">ID del Usuario:</label>
+                        <input type="number" id="user-id" placeholder="Ingresa el ID del usuario" min="1">
+                    </div>
+                    <button class="btn" onclick="loadExistingUser()">Cargar Usuario</button>
+                    <button class="btn btn-secondary" onclick="loadAvailableUsers()">Ver Usuarios Disponibles</button>
+                </div>
+
+                <div id="new-user-section" class="section" style="display: none;">
+                    <h2><span class="section-icon">➕</span>Nuevo Usuario</h2>
+                    <p>Califica algunas películas para generar recomendaciones personalizadas:</p>
+                    
+                    <div class="form-group">
+                        <label for="movie-search">Buscar Película:</label>
+                        <input type="text" id="movie-search" placeholder="Escribe el nombre de una película..." onkeyup="searchMovies()">
+                    </div>
+
+                    <div id="movie-suggestions" class="movie-grid" style="display: none;">
+                        <!-- Sugerencias de películas aparecerán aquí -->
+                    </div>
+
+                    <div id="user-ratings" class="section">
+                        <h3>Mis Calificaciones</h3>
+                        <div id="rated-movies" class="movie-grid">
+                            <!-- Películas calificadas aparecerán aquí -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab: Configuración KNN -->
+            <div id="knn-config" class="tab-content">
+                <div class="section">
+                    <h2><span class="section-icon">⚙️</span>Parámetros del Algoritmo KNN</h2>
+                    
+                    <div class="form-group">
+                        <label for="k-value">Número de Vecinos (K):</label>
+                        <input type="number" id="k-value" value="5" min="1" max="20">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="distance-type">Función de Distancia:</label>
+                        <select id="distance-type">
+                            <option value="euclidiana">Distancia Euclidiana</option>
+                            <option value="manhattan">Distancia Manhattan</option>
+                            <option value="coseno">Similitud Coseno</option>
+                            <option value="pearson">Correlación Pearson</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="rating-threshold">Umbral Mínimo de Calificación:</label>
+                        <input type="number" id="rating-threshold" value="3.0" min="1" max="5" step="0.1">
+                    </div>
+
+                    <button class="btn btn-success" onclick="runKNN()">🚀 Ejecutar KNN</button>
+                </div>
+            </div>
+
+            <!-- Tab: Resultados -->
+            <div id="results" class="tab-content">
+                <div class="section">
+                    <h2><span class="section-icon">👥</span>Vecinos Más Cercanos</h2>
+                    <div id="neighbors-results" class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Ejecuta el algoritmo KNN para ver los resultados</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2><span class="section-icon">🎬</span>Recomendaciones de Películas</h2>
+                    <div id="recommendations-results" class="loading">
+                        <div class="loading-spinner"></div>
+                        <p>Los resultados aparecerán aquí después de ejecutar KNN</p>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2><span class="section-icon">📈</span>Estadísticas</h2>
+                    <div id="stats-results" class="stats-grid">
+                        <!-- Estadísticas aparecerán aquí -->
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2><span class="section-icon">💾</span>Acciones</h2>
+                    <button class="btn btn-success" onclick="exportRecommendations()">📁 Exportar Recomendaciones</button>
+                    <button class="btn btn-secondary" onclick="saveUserProfile()">👤 Guardar Perfil</button>
+                    <button class="btn btn-danger" onclick="resetApplication()">🔄 Reiniciar Aplicación</button>
+                </div>
+            </div>
+
+            <!-- Tab: Visualización -->
+            <div id="visualization" class="tab-content">
+                <div class="section">
+                    <h2><span class="section-icon">🌐</span>Red de Vecinos</h2>
+                    <div id="network-container">
+                        <canvas id="network-canvas" class="network-visualization"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
