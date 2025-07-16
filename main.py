@@ -22,7 +22,7 @@ import sys
 
 # ===== 1. Conexión a Dask (solo una vez) =====
 try:
-    client = Client("tcp://10.7.135.127:8786")
+    client = Client("tcp://10.147.17.195:8786")
     print("✅ Conectado a Dask scheduler remoto")
     print(client)
 except Exception as e:
