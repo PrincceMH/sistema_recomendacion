@@ -16,7 +16,7 @@ from knn.filtrar_recomendaciones import filtrar_recomendaciones, mostrar_recomen
 
 # ===== 1. Conexión a Dask (solo una vez) =====
 try:
-    client = Client("tcp://10.7.134.38:8786")
+    client = Client("tcp://10.147.17.195:8786")
     print("Conectado a Dask scheduler remoto")
     print(client)
 except Exception as e:
@@ -34,6 +34,7 @@ data = cargar_rating_matrix(
 print("Columnas del DataFrame:", data.columns.tolist())
 movies = pd.read_csv("/mnt/datasets/ml-32m/movies.csv")
 usuarios = obtener_usuarios(data)
+print(usuarios)
 
 # ===== 3. Tabla de funciones de distancia =====
 funciones = {
@@ -115,8 +116,14 @@ while True:
             # Preparar datos y generar recomendaciones
             start_time = time.time()  # Iniciar medición de tiempo
             peliculas_no_vistas_df, peliculas_vistas_info, vector_generos_priorizado = preparar_datos(data, movies, usuario_x)
+            print("----------------------------------------------------")
+            print(vector_generos_priorizado)
             resultados_recomendaciones = recomendar_peliculas(vecinos, peliculas_no_vistas_df, tabla, umbral)
+            print("----------------------------------------------------")
+            print(resultados_recomendaciones)
             nueva_lista_filtrada = filtrar_recomendaciones(vector_generos_priorizado, resultados_recomendaciones)
+            print("----------------------------------------------------")
+            print(nueva_lista_filtrada)
             mostrar_recomendaciones_personalizadas(vector_generos_priorizado, nueva_lista_filtrada)
             end_time = time.time()  # Finalizar medición de tiempo
             print(f"Tiempo de ejecución: {end_time - start_time:.2f} segundos")
