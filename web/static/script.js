@@ -71,11 +71,11 @@ function simulateKNN(k, distanceType, threshold) {
     }
     
     const recommendations = [
-        { movieId: 1, title: "Toy Story (1995)", predictedRating: 4.2, confidence: 0.85 },
-        { movieId: 2, title: "Jumanji (1995)", predictedRating: 3.8, confidence: 0.75 },
-        { movieId: 3, title: "Grumpier Old Men (1995)", predictedRating: 3.5, confidence: 0.70 },
-        { movieId: 4, title: "Waiting to Exhale (1995)", predictedRating: 4.0, confidence: 0.80 },
-        { movieId: 5, title: "Father of the Bride Part II (1995)", predictedRating: 3.7, confidence: 0.72 }
+        { movieId: 1, title: "Toy Story (1995)", predictedRating: 4.2, confidence: 0.85, genres: "Adventure|Animation|Children|Comedy|Fantasy" },
+        { movieId: 2, title: "Jumanji (1995)", predictedRating: 3.8, confidence: 0.75, genres: "Adventure|Children|Fantasy" },
+        { movieId: 3, title: "Grumpier Old Men (1995)", predictedRating: 3.5, confidence: 0.70, genres: "Comedy|Romance" },
+        { movieId: 4, title: "Waiting to Exhale (1995)", predictedRating: 4.0, confidence: 0.80, genres: "Comedy|Drama|Romance" },
+        { movieId: 5, title: "Father of the Bride Part II (1995)", predictedRating: 3.7, confidence: 0.72, genres: "Comedy" }
     ];
     
     return {
@@ -166,6 +166,8 @@ async function loadSampleMovies() {
     try {
         const response = await connectToPythonBackend('get_sample_movies', {});
         if (response.movies) {
+            // Guardar películas en el estado para uso posterior
+            appState.movies = response.movies;
             displayMovieSuggestions(response.movies);
         }
     } catch (error) {
@@ -178,6 +180,7 @@ async function loadSampleMovies() {
             { movieId: 4, title: "Waiting to Exhale (1995)", genres: "Comedy|Drama|Romance" },
             { movieId: 5, title: "Father of the Bride Part II (1995)", genres: "Comedy" }
         ];
+        appState.movies = sampleMovies;
         displayMovieSuggestions(sampleMovies);
     }
 }
@@ -202,8 +205,14 @@ function createMovieCard(movie, showRating = false) {
     
     const rating = appState.userRatings[movie.movieId] || 0;
     
+    // Procesar géneros
+    const genres = movie.genres ? movie.genres.split('|').join(', ') : 'Sin géneros';
+    
     card.innerHTML = `
         <div class="movie-title">${movie.title}</div>
+        <div class="movie-genres">
+            <strong>Géneros:</strong> <span style="color: #7f8c8d; font-size: 0.9em;">${genres}</span>
+        </div>
         <div class="movie-rating">
             <span>Tu calificación:</span>
             <div class="rating-stars">
@@ -214,7 +223,11 @@ function createMovieCard(movie, showRating = false) {
             </div>
             <span>${rating > 0 ? rating : 'Sin calificar'}</span>
         </div>
-        ${showRating ? `<div class="predicted-rating">Predicción: ${movie.predictedRating || 'N/A'}</div>` : ''}
+        ${showRating ? `
+            <div class="predicted-rating">
+                <strong>Predicción:</strong> ${movie.predictedRating || 'N/A'}
+            </div>
+        ` : ''}
     `;
     
     return card;
@@ -247,10 +260,23 @@ function updateRatedMovies() {
     Object.keys(appState.userRatings).forEach(movieId => {
         const rating = appState.userRatings[movieId];
         if (rating > 0) {
+            // Buscar información de la película en el estado o crear datos básicos
+            const movieInfo = appState.movies.find(m => m.movieId == movieId) || {
+                movieId: movieId,
+                title: `Película ${movieId}`,
+                genres: 'Desconocido'
+            };
+            
             const card = document.createElement('div');
             card.className = 'movie-card';
+            
+            const genres = movieInfo.genres ? movieInfo.genres.split('|').join(', ') : 'Sin géneros';
+            
             card.innerHTML = `
-                <div class="movie-title">Película ${movieId}</div>
+                <div class="movie-title">${movieInfo.title}</div>
+                <div class="movie-genres">
+                    <strong>Géneros:</strong> <span style="color: #7f8c8d; font-size: 0.9em;">${genres}</span>
+                </div>
                 <div class="movie-rating">
                     <span>Tu calificación:</span>
                     <div class="rating-stars">
@@ -279,6 +305,10 @@ async function searchMovies() {
     try {
         const response = await connectToPythonBackend('search_movies', { query: searchTerm });
         if (response.movies && response.movies.length > 0) {
+            // Guardar las películas encontradas en el estado
+            appState.movies = [...appState.movies, ...response.movies.filter(
+                newMovie => !appState.movies.some(existingMovie => existingMovie.movieId === newMovie.movieId)
+            )];
             displayMovieSuggestions(response.movies);
         } else {
             container.style.display = 'none';
@@ -420,8 +450,15 @@ function displayRecommendations(recommendations) {
     recommendations.forEach(movie => {
         const card = document.createElement('div');
         card.className = 'movie-card';
+        
+        // Procesar géneros
+        const genres = movie.genres ? movie.genres.split('|').join(', ') : 'Sin géneros';
+        
         card.innerHTML = `
             <div class="movie-title">${movie.title}</div>
+            <div class="movie-genres">
+                <strong>Géneros:</strong> <span style="color: #7f8c8d; font-size: 0.9em;">${genres}</span>
+            </div>
             <div class="movie-rating">
                 <span>Rating Predicho:</span>
                 <div class="rating-stars">
