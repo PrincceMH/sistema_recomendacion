@@ -2,7 +2,7 @@ from dask.distributed import Client
 import pandas as pd
 import sys
 import time
-import random
+from collections import Counter
 
 # Importar funciones necesarias
 from knn.load_data import cargar_rating_matrix
@@ -16,7 +16,7 @@ from knn.filtrar_recomendaciones import filtrar_recomendaciones, mostrar_recomen
 
 # ===== 1. Conexión a Dask (solo una vez) =====
 try:
-    client = Client("tcp://10.147.17.63:8786")
+    client = Client("tcp://10.147.17.195:8786")
     print("Conectado a Dask scheduler remoto")
     print(client)
 except Exception as e:
@@ -34,6 +34,7 @@ data = cargar_rating_matrix(
 print("Columnas del DataFrame:", data.columns.tolist())
 movies = pd.read_csv("/mnt/datasets/ml-32m/movies.csv")
 usuarios = obtener_usuarios(data)
+print(usuarios)
 
 # ===== 3. Tabla de funciones de distancia =====
 funciones = {
@@ -54,12 +55,10 @@ while True:
     print("1. Realizar nueva consulta KNN")
     print("2. Salir del sistema")
     opcion_menu = input("Selecciona 1 o 2: ").strip()
-
     if opcion_menu == "2":
         print("Cerrando sesión... Hasta luego!")
         client.close()  # Cerrar conexión Dask ordenadamente
         break
-
     if opcion_menu != "1":
         print("Opción no válida. Intenta de nuevo.")
         continue
@@ -71,10 +70,8 @@ while True:
         print("2. Escoger nuevo usuario")
         print("3. Volver al menú principal")
         opcion_usuario = input("Selecciona 1, 2 o 3: ").strip()
-
         if opcion_usuario == "3":
             break
-
         if opcion_usuario == "1":
             # Solicitar parámetros al usuario
             try:
@@ -115,8 +112,14 @@ while True:
             # Preparar datos y generar recomendaciones
             start_time = time.time()  # Iniciar medición de tiempo
             peliculas_no_vistas_df, peliculas_vistas_info, vector_generos_priorizado = preparar_datos(data, movies, usuario_x)
+            print("----------------------------------------------------")
+            print(vector_generos_priorizado)
             resultados_recomendaciones = recomendar_peliculas(vecinos, peliculas_no_vistas_df, tabla, umbral)
+            print("----------------------------------------------------")
+            print(resultados_recomendaciones)
             nueva_lista_filtrada = filtrar_recomendaciones(vector_generos_priorizado, resultados_recomendaciones)
+            print("----------------------------------------------------")
+            print(nueva_lista_filtrada)
             mostrar_recomendaciones_personalizadas(vector_generos_priorizado, nueva_lista_filtrada)
             end_time = time.time()  # Finalizar medición de tiempo
             print(f"Tiempo de ejecución: {end_time - start_time:.2f} segundos")
@@ -158,6 +161,16 @@ while True:
             nuevo_usuario_id = max(usuarios) + 1
             user_ratings_dict[nuevo_usuario_id] = nuevo_usuario_ratings
             usuarios.append(nuevo_usuario_id)
+
+            # Crear un DataFrame con las calificaciones del nuevo usuario
+            nuevas_calificaciones = pd.DataFrame([(nuevo_usuario_id, movie_id, rating) for movie_id, rating in nuevo_usuario_ratings.items()], columns=['userId', 'movieId', 'rating'])
+
+            # Añadir las nuevas calificaciones al DataFrame original
+            data = pd.concat([data, nuevas_calificaciones], ignore_index=True)
+
+            # Imprimir para depuración
+            print("Nuevo usuario añadido:", nuevo_usuario_id)
+            print("Calificaciones del nuevo usuario:", nuevo_usuario_ratings)
 
             # Seguir el flujo principal con el nuevo usuario
             try:
